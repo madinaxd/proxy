@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"sync"
 )
@@ -38,12 +39,18 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	if r.Header.Get("Content-Type") != "application/json" {
+		http.Error(w, "Unsupported media type", http.StatusUnsupportedMediaType)
+		return
+	}
 
 	request, err := parseRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("request: %+v", request)
 
 	id := storeRequest(request)
 
@@ -53,7 +60,11 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("response: %+v", response)
+
 	storeResponse(id, response)
+
+	log.Printf("requests map: %+v", requests)
 
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
